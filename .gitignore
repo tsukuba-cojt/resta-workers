@@ -1,0 +1,7 @@
+# Node.js
+node_modules
+yarn.lock
+
+# Cloudflare Workers
+wrangler.toml
+.wrangler
