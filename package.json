@@ -9,12 +9,15 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20231025.0",
+    "@types/uuid": "^9.0.7",
     "typescript": "^5.0.4",
     "wrangler": "^3.0.0"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.1.11",
+    "firebase-auth-cloudflare-workers": "^1.0.1",
     "hono": "^3.9.2",
+    "uuid": "^9.0.1",
     "workers-qb": "^1.1.1",
     "zod": "^3.22.4"
   }

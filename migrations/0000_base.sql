@@ -2,6 +2,7 @@
 
 CREATE TABLE user(
     id TEXT PRIMARY KEY,
+    firebase_uid TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime')),
     updated_at TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime'))
 );
@@ -15,7 +16,7 @@ CREATE TABLE format (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT,
-    tag TEXT,
+    tags TEXT,
     block TEXT NOT NULL,
     download INTEGER NOT NULL DEFAULT 0,
     user_id TEXT NOT NULL,
