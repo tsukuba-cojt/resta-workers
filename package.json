@@ -13,7 +13,9 @@
     "wrangler": "^3.0.0"
   },
   "dependencies": {
+    "@hono/zod-validator": "^0.1.11",
     "hono": "^3.9.2",
-    "workers-qb": "^1.1.1"
+    "workers-qb": "^1.1.1",
+    "zod": "^3.22.4"
   }
 }
