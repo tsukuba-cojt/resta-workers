@@ -1,5 +1,6 @@
-import { Hono } from "hono";
+import { Env, Hono } from "hono";
 import { cors } from "hono/cors";
+import { Hook } from "@hono/zod-validator";
 
 import { Bindings } from "./bindings";
 import formatRouter from "./routes/format";
@@ -14,5 +15,18 @@ app.use(
 );
 
 app.route("/api/format", formatRouter);
+
+app.get("/", (c) => {
+  return c.text("Resta endpoint");
+});
+
+export const processBadRequest: Hook<Record<string, any>, Env, string> = async (
+  result,
+  c
+) => {
+  if (!result.success) {
+    return c.text("Bad Request", 400);
+  }
+};
 
 export default app;

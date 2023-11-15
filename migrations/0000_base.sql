@@ -17,7 +17,6 @@ CREATE TABLE format (
     title TEXT NOT NULL,
     description TEXT,
     tags TEXT,
-    block TEXT NOT NULL,
     download INTEGER NOT NULL DEFAULT 0,
     user_id TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime')),
@@ -30,11 +29,12 @@ BEGIN
     UPDATE format SET updated_at = DATETIME('now', 'localtime') WHERE rowid == NEW.rowid;
 END;
 
-CREATE TABLE format_url (
-    format_id TEXT,
+CREATE TABLE format_block (
+    format_id TEXT NOT NULL,
     order_no INT,
+    block TEXT NOT NULL,
     url TEXT NOT NULL,
-    FOREIGN KEY (format_id) REFERENCES format(id),
+    FOREIGN KEY (id) REFERENCES format(id),
     PRIMARY KEY(format_id, order_no)
 );
 
