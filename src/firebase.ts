@@ -1,8 +1,4 @@
-import {
-  Auth,
-  FirebaseIdToken,
-  WorkersKVStoreSingle,
-} from "firebase-auth-cloudflare-workers";
+import { Auth, WorkersKVStoreSingle } from "firebase-auth-cloudflare-workers";
 import { Bindings } from "./bindings";
 
 export const verifyJWT = async (
