@@ -10,33 +10,24 @@ import { verifyJWT } from "../firebase";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-const getFormatsSchema = z.object({
+// get a format list
+const getFormatListSchema = z.object({
   keyword: z.string(),
   type: z.union([z.literal("keyword"), z.literal("url")]),
 });
 
-// get a list
 app.get(
   "/",
-  zValidator("json", getFormatsSchema, processBadRequest),
+  zValidator("param", getFormatListSchema, processBadRequest),
   async (c) => {
-    const { keyword, type } = c.req.valid("json");
+    const { keyword, type } = c.req.valid("param");
 
     const qb = new D1QB(c.env.DB);
 
     interface FetchResult {
       id: string;
       title: string;
-      description: string;
-      tags: string;
-      download: number;
-      user_id: string;
-      created_at: string;
-      updated_at: string;
     }
-
-    // TODO
-    const result: any[] = [];
 
     try {
       if (type === "keyword") {
@@ -57,15 +48,54 @@ app.get(
       return c.text("Internal Server Error", 500);
     }
 
+    const result: any[] = []; // TODO
     return c.json({ result });
   }
 );
 
-app.get("/:id", (c) => {
-  // TODO
-  return c.text("TODO");
+// get a single format
+const getFormatSchema = z.object({
+  id: z.string(),
 });
 
+app.get(
+  "/:id",
+  zValidator("param", getFormatSchema, processBadRequest),
+  async (c) => {
+    const { id } = c.req.valid("param");
+
+    const qb = new D1QB(c.env.DB);
+
+    interface FetchResult {
+      id: string;
+      title: string;
+      description: string;
+      tags: string;
+      download: number;
+      user_id: string;
+      created_at: string;
+      updated_at: string;
+    }
+
+    try {
+      const fetched: FetchResult[] = await qb
+        .fetchAll({
+          tableName: "format",
+          fields: "",
+          where: {
+            conditions: `id = ${id}`,
+          },
+        })
+        .execute();
+
+      return c.json({ result: {} });
+    } catch (e) {
+      return c.text("Internal Server Error", 500);
+    }
+  }
+);
+
+// post a format
 const postFormatsSchema = z.object({
   title: z.string(),
   description: z.string(),
