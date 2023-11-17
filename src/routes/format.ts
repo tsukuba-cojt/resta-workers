@@ -4,23 +4,30 @@ import { v4 as uuidV4 } from "uuid";
 import { D1QB } from "workers-qb";
 import { z } from "zod";
 
-import { processBadRequest } from "..";
 import { Bindings } from "../bindings";
-import { verifyJWT } from "../firebase";
+import { authorize } from "../firebase";
+import { processBadRequest } from "../utils";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
 // get a format list
 const getFormatListSchema = z.object({
-  keyword: z.string(),
-  type: z.union([z.literal("keyword"), z.literal("url")]),
+  range: z.string(),
+  keyword: z.string().optional(),
+  type: z.union([z.literal("keyword"), z.literal("url")]).optional(),
 });
 
 app.get(
   "/",
-  zValidator("param", getFormatListSchema, processBadRequest),
+  zValidator("query", getFormatListSchema, processBadRequest),
   async (c) => {
-    const { keyword, type } = c.req.valid("param");
+    const { range: rangeStr, keyword, type } = c.req.valid("query");
+
+    // range
+    const range = parseInt(rangeStr, 10);
+    if (Number.isNaN(range)) {
+      return c.text("Bad Request", 400);
+    }
 
     const qb = new D1QB(c.env.DB);
 
@@ -30,26 +37,39 @@ app.get(
     }
 
     try {
-      if (type === "keyword") {
-        const fetched: FetchResult[] = await qb
+      let fetched: FetchResult[];
+      if (keyword) {
+        if (type === "keyword") {
+          fetched = await qb
+            .fetchAll({
+              tableName: "format",
+              fields: "*",
+              where: {
+                conditions: `keyword LIKE ${keyword}`,
+              },
+              limit: range,
+            })
+            .execute();
+          // TODO
+        } else {
+          // TODO
+        }
+      } else {
+        fetched = await qb
           .fetchAll({
             tableName: "format",
-            fields: "",
-            where: {
-              conditions: `keyword LIKE ${keyword}`,
-            },
+            fields: "*",
+            limit: range,
           })
           .execute();
-        // TODO
-      } else {
-        // TODO
       }
     } catch (e) {
-      return c.text("Internal Server Error", 500);
+      console.log(e);
+      return c.text("Internal Server Error2", 500);
     }
 
     const result: any[] = []; // TODO
-    return c.json({ result });
+    return c.json([]);
   }
 );
 
@@ -63,7 +83,6 @@ app.get(
   zValidator("param", getFormatSchema, processBadRequest),
   async (c) => {
     const { id } = c.req.valid("param");
-
     const qb = new D1QB(c.env.DB);
 
     interface FetchResult {
@@ -90,7 +109,7 @@ app.get(
 
       return c.json({ result: {} });
     } catch (e) {
-      return c.text("Internal Server Error", 500);
+      return c.text("Internal Server Error3", 500);
     }
   }
 );
@@ -102,27 +121,15 @@ const postFormatsSchema = z.object({
   tags: z.array(z.string()),
   block: z.unknown(),
   images: z.array(z.string()),
-  userId: z.string(),
 });
 
 app.post(
   "/",
-  zValidator("json", postFormatsSchema, (result, c) => {
-    if (!result.success) {
-    }
-  }),
+  zValidator("json", postFormatsSchema, processBadRequest),
+  authorize,
   async (c) => {
-    const { userId, title, images, description, tags, block } =
-      c.req.valid("json");
-
-    // authorization
-    const verified = await verifyJWT(c.req.header("Authorization"), c.env);
-    if (verified === null) {
-      return c.text("Unauthorized", 401);
-    }
-    if (verified.uid !== userId) {
-      return c.text("Bad Request", 400);
-    }
+    const { title, images, description, tags, block } = c.req.valid("json");
+    const userId = (c as any).uid;
 
     const qb = new D1QB(c.env.DB);
     const formatId = uuidV4();

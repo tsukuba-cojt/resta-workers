@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
-    "migration": "wrangler d1 migrations apply base"
+    "dev": "wrangler dev --remote",
+    "migration": "wrangler d1 migrations apply resta"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20231025.0",

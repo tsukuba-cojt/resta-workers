@@ -1,4 +1,4 @@
--- Migration number: 0000 	 2023-11-10T06:52:05.640Z
+-- Migration number: 0000 	 2023-11-15T05:51:08.316Z
 
 CREATE TABLE user(
     id TEXT PRIMARY KEY,
