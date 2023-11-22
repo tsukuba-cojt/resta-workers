@@ -34,7 +34,7 @@ CREATE TABLE format_block (
     order_no INT,
     block TEXT NOT NULL,
     url TEXT NOT NULL,
-    FOREIGN KEY (id) REFERENCES format(id),
+    FOREIGN KEY (format_id) REFERENCES format(id),
     PRIMARY KEY(format_id, order_no)
 );
 

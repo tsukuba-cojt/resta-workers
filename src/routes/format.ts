@@ -40,32 +40,38 @@ app.get(
       let fetched: FetchResult[];
       if (keyword) {
         if (type === "keyword") {
-          fetched = await qb
-            .fetchAll({
-              tableName: "format",
-              fields: "*",
-              where: {
-                conditions: `keyword LIKE ${keyword}`,
-              },
-              limit: range,
-            })
-            .execute();
+          fetched = (
+            await qb
+              .fetchAll({
+                tableName: "format",
+                fields: "*",
+                where: {
+                  conditions: `title LIKE '${keyword}'`,
+                },
+                limit: range,
+              })
+              .execute()
+          ).results;
           // TODO
         } else {
           // TODO
+          fetched = [];
         }
       } else {
-        fetched = await qb
-          .fetchAll({
-            tableName: "format",
-            fields: "*",
-            limit: range,
-          })
-          .execute();
+        fetched = (
+          await qb
+            .fetchAll({
+              tableName: "format",
+              fields: "*",
+              limit: range,
+            })
+            .execute()
+        ).results;
       }
+      console.log(fetched);
     } catch (e) {
       console.log(e);
-      return c.text("Internal Server Error2", 500);
+      return c.text("Internal Server Error", 500);
     }
 
     const result: any[] = []; // TODO
@@ -109,7 +115,7 @@ app.get(
 
       return c.json({ result: {} });
     } catch (e) {
-      return c.text("Internal Server Error3", 500);
+      return c.text("Internal Server Error", 500);
     }
   }
 );

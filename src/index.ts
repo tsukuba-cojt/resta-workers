@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 
 import { Bindings } from "./bindings";
 import formatRouter from "./routes/format";
+import userRouter from "./routes/user";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -18,5 +19,6 @@ app.get("/", (c) => {
 });
 
 app.route("/api/formats", formatRouter);
+app.route("/api/users", userRouter);
 
 export default app;
