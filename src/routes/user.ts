@@ -10,7 +10,7 @@ import { processBadRequest } from "../utils";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// ユーザ情報を取得する
+// 自分自身のユーザ情報を取得する
 const postSchema = z.object({
   uid: z.string(),
 });
@@ -24,7 +24,7 @@ interface UserResult {
 }
 
 app.post(
-  "/",
+  "/me",
   zValidator("json", postSchema, processBadRequest),
   authorize,
   async (c) => {
@@ -37,11 +37,11 @@ app.post(
 
     const qb = new D1QB(c.env.DB);
     const fetched = await qb
-      .fetchOne({
+      .fetchAll({
         tableName: "user",
         fields: "id, name",
         where: {
-          conditions: `firebase_uid = ${uid}`,
+          conditions: `firebase_uid = '${uid}'`,
         },
       })
       .execute();
@@ -68,8 +68,8 @@ app.post(
 
 // ユーザ情報を登録する
 const postRegisterSchema = z.object({
-  name: z.string(),
   uid: z.string(),
+  name: z.string(),
 });
 
 app.post(

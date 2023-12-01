@@ -17,11 +17,11 @@ const getFormatListSchema = z.object({
   type: z.union([z.literal("keyword"), z.literal("url")]).optional(),
 });
 
-app.get(
+app.post(
   "/",
-  zValidator("query", getFormatListSchema, processBadRequest),
+  zValidator("json", getFormatListSchema, processBadRequest),
   async (c) => {
-    const { range: rangeStr, keyword, type } = c.req.valid("query");
+    const { range: rangeStr, keyword, type } = c.req.valid("json");
 
     // range
     const range = parseInt(rangeStr, 10);

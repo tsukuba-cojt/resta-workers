@@ -1,5 +1,4 @@
 import { Context, MiddlewareHandler, Next } from "hono";
-import { validator } from "hono/validator";
 import {
   Auth,
   FirebaseIdToken,
@@ -15,12 +14,11 @@ const verifyJWT = async (authorization: string | undefined, env: Bindings) => {
   const jwt = authorization.replace(/Bearer\s+/i, "");
   const auth = Auth.getOrInitialize(
     env.FIREBASE_PROJECT_ID,
-    WorkersKVStoreSingle.getOrInitialize(
-      env.PUBLIC_JWK_CACHE_KEY,
-      env.PUBLIC_JWK_CACHE_KV
-    )
+    WorkersKVStoreSingle.getOrInitialize(env.FIREBASE_JWK_CACHE_KEY, env.KV)
   );
-  return await auth.verifyIdToken(jwt, env);
+  return await auth.verifyIdToken(jwt, {
+    FIREBASE_AUTH_EMULATOR_HOST: undefined,
+  });
 };
 
 export const authorize = (async (c: Context, next: Next) => {

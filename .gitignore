@@ -5,3 +5,4 @@ yarn.lock
 # Cloudflare Workers
 wrangler.toml
 .wrangler
+.dev.vars
