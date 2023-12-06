@@ -86,14 +86,16 @@ app.post(
 
     const id = uuidV4();
     const qb = new D1QB(c.env.DB);
-    qb.insert({
-      tableName: "user",
-      data: {
-        id,
-        name,
-        firebase_uid: uid,
-      },
-    });
+    await qb
+      .insert({
+        tableName: "user",
+        data: {
+          id,
+          name,
+          firebase_uid: uid,
+        },
+      })
+      .execute();
 
     const result: UserResult = {
       user: {
