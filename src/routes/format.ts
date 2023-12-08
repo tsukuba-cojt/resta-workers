@@ -74,14 +74,13 @@ app.post(
       return c.text("Internal Server Error", 500);
     }
 
-    const result: any[] = []; // TODO
     return c.json([]);
   }
 );
 
 // get a single format
 const getFormatSchema = z.object({
-  id: z.string(),
+  id: z.string().uuid(),
 });
 
 app.get(
