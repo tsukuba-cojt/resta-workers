@@ -1,7 +1,8 @@
-import { Context, MiddlewareHandler, Next } from "hono";
 import { Auth, WorkersKVStoreSingle } from "firebase-auth-cloudflare-workers";
-import { Bindings } from "./bindings";
+import { Context, MiddlewareHandler, Next } from "hono";
 import { D1QB } from "workers-qb";
+
+import { Bindings } from "./bindings";
 
 const verifyJWT = async (authorization: string | undefined, env: Bindings) => {
   if (!authorization) {
