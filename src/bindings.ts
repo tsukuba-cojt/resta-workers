@@ -1,6 +1,7 @@
 export type Bindings = {
-  DB: D1Database;
   KV: KVNamespace;
+  DB: D1Database;
+  R2: R2Bucket;
 
   // firebase
   FIREBASE_PROJECT_ID: string;

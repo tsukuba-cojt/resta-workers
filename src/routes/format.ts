@@ -5,12 +5,12 @@ import { D1QB } from "workers-qb";
 import { z } from "zod";
 
 import { Bindings } from "../bindings";
-import { authorize } from "../firebase";
+import { authorize, getUidFromFirebaseUid } from "../firebase";
 import { processBadRequest } from "../utils";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// get a format list
+// Format 一覧を取得する
 const getFormatListSchema = z.object({
   range: z.string(),
   keyword: z.string().optional(),
@@ -91,25 +91,35 @@ app.get(
     const { id } = c.req.valid("param");
     const qb = new D1QB(c.env.DB);
 
-    interface FetchResult {
-      id: string;
-      title: string;
-      description: string;
-      tags: string;
-      download: number;
-      user_id: string;
-      created_at: string;
-      updated_at: string;
-    }
-
     try {
-      const fetched: FetchResult[] = await qb
+      interface FetchResult {
+        id: string;
+        title: string;
+        description: string;
+        tags: string;
+        download: number;
+        created_at: string;
+        updated_at: string;
+      }
+      const fetched: FetchResult = await qb
         .fetchAll({
           tableName: "format",
           fields: "",
           where: {
             conditions: `id = ${id}`,
           },
+          join: [
+            {
+              table: "format_block",
+              on: "id = fb.format_id",
+              alias: "fb",
+            },
+            {
+              table: "format_thumbnail",
+              on: "id = ft.format_id",
+              alias: "ft",
+            },
+          ],
         })
         .execute();
 
@@ -120,13 +130,18 @@ app.get(
   }
 );
 
-// post a format
+// Format を投稿する
 const postFormatsSchema = z.object({
   title: z.string(),
   description: z.string(),
   tags: z.array(z.string()),
-  block: z.unknown(),
-  images: z.array(z.string()),
+  blocks: z.array(
+    z.object({
+      url: z.string(),
+      block: z.string(),
+    })
+  ),
+  thumbnails: z.array(z.string()),
 });
 
 app.post(
@@ -134,36 +149,60 @@ app.post(
   zValidator("json", postFormatsSchema, processBadRequest),
   authorize,
   async (c) => {
-    const { title, images, description, tags, block } = c.req.valid("json");
-    const userId = (c as any).uid;
+    const { title, thumbnails, description, tags, blocks } =
+      c.req.valid("json");
+
+    const firebaseUid = (c as any).firebaseUid;
+    const uid = await getUidFromFirebaseUid(firebaseUid, c.env.DB);
+    if (!uid) {
+      return c.text("Internal Server Error", 500);
+    }
 
     const qb = new D1QB(c.env.DB);
     const formatId = uuidV4();
 
-    // add images
-    qb.insert({
-      tableName: "format_thumbnail",
-      data: images.map((src, index) => ({
-        format_id: formatId,
-        order_no: index,
-        src,
-      })),
-    });
+    try {
+      await qb
+        .insert({
+          tableName: "format",
+          data: {
+            id: formatId,
+            title,
+            description,
+            tags: JSON.stringify(tags),
+            user_id: uid,
+          },
+        })
+        .execute();
 
-    // add a format
-    qb.insert({
-      tableName: "format",
-      data: {
-        id: formatId,
-        title,
-        description,
-        tags: JSON.stringify(tags),
-        block: JSON.stringify(block),
-        user_id: userId,
-      },
-    });
+      await qb
+        .insert({
+          tableName: "format_block",
+          data: blocks.map(({ block, url }, index) => ({
+            format_id: formatId,
+            order_no: index,
+            block: block,
+            url,
+          })),
+        })
+        .execute();
 
-    return c.text("Created", 201);
+      await qb
+        .insert({
+          tableName: "format_thumbnail",
+          data: thumbnails.map((src, index) => ({
+            format_id: formatId,
+            order_no: index,
+            src,
+          })),
+        })
+        .execute();
+    } catch (e) {
+      console.log(e);
+      return c.text("Internal Server Error", 500);
+    }
+
+    return c.json({ formatId }, 201);
   }
 );
 

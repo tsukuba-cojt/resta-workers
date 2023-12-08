@@ -1,9 +1,5 @@
 import { Context, MiddlewareHandler, Next } from "hono";
-import {
-  Auth,
-  FirebaseIdToken,
-  WorkersKVStoreSingle,
-} from "firebase-auth-cloudflare-workers";
+import { Auth, WorkersKVStoreSingle } from "firebase-auth-cloudflare-workers";
 import { Bindings } from "./bindings";
 import { D1QB } from "workers-qb";
 
@@ -26,26 +22,26 @@ export const authorize = (async (c: Context, next: Next) => {
   if (verified === null) {
     return c.text("Unauthorized", 401);
   }
-  (c as any).uid = verified.uid;
+  (c as any).firebaseUid = verified.uid;
   await next();
 }) satisfies MiddlewareHandler;
 
-export const getUserIdFromFirebaseToken = async (
-  token: FirebaseIdToken,
+export const getUidFromFirebaseUid = async (
+  firebaseUid: string,
   db: D1Database
 ): Promise<string | null> => {
   const qb = new D1QB(db);
   const query = qb.fetchOne({
     tableName: "user",
-    fields: "",
+    fields: "id",
     where: {
-      conditions: `firebase_uid = ${token.uid}`,
+      conditions: `firebase_uid = ${firebaseUid}`,
       params: [true],
     },
   });
 
   try {
-    const result = await query.execute();
+    const result: { id: string } = await query.execute();
     return result ? result["id"] : null;
   } catch (e) {
     console.log(e);
