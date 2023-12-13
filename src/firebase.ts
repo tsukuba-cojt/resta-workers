@@ -32,17 +32,17 @@ export const getUidFromFirebaseUid = async (
   db: D1Database
 ): Promise<string | null> => {
   const qb = new D1QB(db);
-  const query = qb.fetchOne({
+  const query = qb.fetchAll({
     tableName: "user",
     fields: "id",
     where: {
-      conditions: `firebase_uid = ${firebaseUid}`,
-      params: [true],
+      conditions: `firebase_uid = ?`,
+      params: [firebaseUid],
     },
   });
 
   try {
-    const result: { id: string } = await query.execute();
+    const result: { id: string } = (await query.execute()).results[0];
     return result ? result["id"] : null;
   } catch (e) {
     console.log(e);

@@ -17,7 +17,7 @@ const getFormatListSchema = z.object({
   type: z.union([z.literal("keyword"), z.literal("url")]).optional(),
 });
 
-app.post(
+app.get(
   "/",
   zValidator("json", getFormatListSchema, processBadRequest),
   async (c) => {
@@ -130,8 +130,11 @@ app.get(
 );
 
 // Format を投稿する
+const MAX_TITLE_COUNT = 32;
+const MAX_PHOTO_COUNT = 8;
+
 const postFormatsSchema = z.object({
-  title: z.string(),
+  title: z.string().max(MAX_TITLE_COUNT),
   description: z.string(),
   tags: z.array(z.string()),
   blocks: z.array(
@@ -140,7 +143,7 @@ const postFormatsSchema = z.object({
       block: z.string(),
     })
   ),
-  thumbnails: z.array(z.string()),
+  thumbnails: z.array(z.string()).max(MAX_PHOTO_COUNT),
 });
 
 app.post(
@@ -174,33 +177,40 @@ app.post(
         })
         .execute();
 
-      await qb
-        .insert({
-          tableName: "format_block",
-          data: blocks.map(({ block, url }, index) => ({
-            format_id: formatId,
-            order_no: index,
-            block: block,
-            url,
-          })),
-        })
-        .execute();
+      // ブロックを追加
+      const blocksData = blocks.map(({ block, url }, index) => ({
+        format_id: formatId,
+        order_no: index,
+        block: block,
+        url,
+      }));
+      if (blocksData.length > 0) {
+        await qb
+          .insert({
+            tableName: "format_block",
+            data: blocksData,
+          })
+          .execute();
+      }
 
-      await qb
-        .insert({
-          tableName: "format_thumbnail",
-          data: thumbnails.map((src, index) => ({
-            format_id: formatId,
-            order_no: index,
-            src,
-          })),
-        })
-        .execute();
+      // サムネイルを追加
+      const thumbnailsData = thumbnails.map((src, index) => ({
+        format_id: formatId,
+        order_no: index,
+        src,
+      }));
+      if (thumbnailsData.length > 0) {
+        await qb
+          .insert({
+            tableName: "format_thumbnail",
+            data: thumbnailsData,
+          })
+          .execute();
+      }
     } catch (e) {
       console.log(e);
       return c.text("Internal Server Error", 500);
     }
-
     return c.json({ formatId }, 201);
   }
 );
