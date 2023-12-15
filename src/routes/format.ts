@@ -6,6 +6,11 @@ import { z } from "zod";
 
 import { Bindings } from "../bindings";
 import { authorize, getUidFromFirebaseUid } from "../firebase";
+import {
+  fetchFormatBlocks,
+  fetchFormatThumbnails,
+  fetchFormatsById,
+} from "../format";
 import { processBadRequest } from "../utils";
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -46,7 +51,8 @@ app.get(
                 tableName: "format",
                 fields: "*",
                 where: {
-                  conditions: `title LIKE '${keyword}'`,
+                  conditions: `title LIKE ?`,
+                  params: [keyword],
                 },
                 limit: range,
               })
@@ -68,7 +74,6 @@ app.get(
             .execute()
         ).results;
       }
-      console.log(fetched);
     } catch (e) {
       console.log(e);
       return c.text("Internal Server Error", 500);
@@ -83,6 +88,19 @@ const getFormatSchema = z.object({
   id: z.string().uuid(),
 });
 
+interface FormatResult {
+  id: string;
+  title: string;
+  description: string;
+  tags: string[];
+  blocks: { url: string; block: string }[];
+  thumbnails: string[];
+  download: number;
+  uid: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 app.get(
   "/:id",
   zValidator("param", getFormatSchema, processBadRequest),
@@ -91,39 +109,32 @@ app.get(
     const qb = new D1QB(c.env.DB);
 
     try {
-      interface FetchResult {
-        id: string;
-        title: string;
-        description: string;
-        tags: string;
-        download: number;
-        created_at: string;
-        updated_at: string;
+      const format = await fetchFormatsById([id], qb);
+      if (format.length === 0) {
+        c.text("Not Found", 404);
       }
-      const fetched: FetchResult = await qb
-        .fetchAll({
-          tableName: "format",
-          fields: "",
-          where: {
-            conditions: `id = ${id}`,
-          },
-          join: [
-            {
-              table: "format_block",
-              on: "id = fb.format_id",
-              alias: "fb",
-            },
-            {
-              table: "format_thumbnail",
-              on: "id = ft.format_id",
-              alias: "ft",
-            },
-          ],
-        })
-        .execute();
+      const blocks = await fetchFormatBlocks([id], qb);
+      const thumbnails = await fetchFormatThumbnails([id], qb);
 
-      return c.json({ result: {} });
+      const result: FormatResult = {
+        id: format[0].id,
+        title: format[0].title,
+        description: format[0].description,
+        tags: JSON.parse(format[0].tags),
+        blocks: blocks
+          .sort((a, b) => a.order_no - b.order_no)
+          .map(({ url, block }) => ({ url, block })),
+        thumbnails: thumbnails
+          .sort(({ order_no }) => order_no)
+          .map(({ src }) => src),
+        download: format[0].download,
+        uid: format[0].user_id,
+        createdAt: format[0].created_at,
+        updatedAt: format[0].updated_at,
+      };
+      return c.json(result);
     } catch (e) {
+      console.log(e);
       return c.text("Internal Server Error", 500);
     }
   }
@@ -211,7 +222,7 @@ app.post(
       console.log(e);
       return c.text("Internal Server Error", 500);
     }
-    return c.json({ formatId }, 201);
+    return c.json({ id: formatId }, 201);
   }
 );
 
