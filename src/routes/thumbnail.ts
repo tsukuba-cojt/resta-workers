@@ -8,6 +8,11 @@ import { z } from "zod";
 import { Bindings } from "../bindings";
 import { processBadRequest } from "../utils";
 
+interface FormatResult {
+  id: string;
+  formatId: string;
+}
+
 const app = new Hono<{ Bindings: Bindings }>();
 
 // サムネイル画像を登録する
@@ -34,11 +39,12 @@ app.post(
         "base64"
       );
       await c.env.R2.put(`thumbnails/${formatId}/${id}.${extention}`, buffer);
-      return c.json({ id, formatId }, 201);
     } catch (e) {
       console.log(e);
       return c.text("Internal Server Error", 500);
     }
+    const result: FormatResult = { id, formatId };
+    return c.json(result, 201);
   }
 );
 

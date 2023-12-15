@@ -8,9 +8,6 @@ import { Bindings } from "../bindings";
 import { authorize } from "../firebase";
 import { processBadRequest } from "../utils";
 
-const app = new Hono<{ Bindings: Bindings }>();
-
-// 自分自身のユーザ情報を取得する
 interface UserResult {
   user?: {
     uid: string;
@@ -19,6 +16,9 @@ interface UserResult {
   };
 }
 
+const app = new Hono<{ Bindings: Bindings }>();
+
+// 自分自身のユーザ情報を取得する
 app.get("/me", authorize, async (c) => {
   const firebaseUid = (c as any).firebaseUid;
   const qb = new D1QB(c.env.DB);
