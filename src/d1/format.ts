@@ -62,6 +62,8 @@ export const fetchFormatsById = async (ids: string[], qb: D1QB) => {
 export const fetchFormatList = async (
   keyword: string | null,
   url: string | null,
+  limit: number,
+  offset: number | null,
   qb: D1QB
 ) => {
   const conditions: string[] = [];
@@ -75,10 +77,9 @@ export const fetchFormatList = async (
     .fetchAll({
       tableName: "format",
       fields: "*",
-      where: {
-        conditions,
-        params,
-      },
+      where: conditions.length > 0 ? { conditions, params } : undefined,
+      limit,
+      offset: offset ?? undefined,
     })
     .execute();
   return result.results as FormatResult[];

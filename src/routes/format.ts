@@ -25,18 +25,44 @@ const app = new Hono<{ Bindings: Bindings }>();
 const getFormatListSchema = z.object({
   keyword: z.string().optional(),
   url: z.string().optional(),
+  limit: z.string().optional(),
+  offset: z.string().optional(),
 });
+
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 30;
 
 app.get(
   "/",
-  zValidator("json", getFormatListSchema, processBadRequest),
+  zValidator("query", getFormatListSchema, processBadRequest),
   async (c) => {
-    // TODO: 範囲選択
-    const { keyword, url } = c.req.valid("json");
+    const {
+      keyword,
+      url,
+      limit: limitStr,
+      offset: offsetStr,
+    } = c.req.valid("query");
     const qb = new D1QB(c.env.DB);
 
+    const [limit, offset] = (() => {
+      if (limitStr !== undefined && !Number.isNaN(limitStr)) {
+        const offset =
+          offsetStr !== undefined && !Number.isNaN(offsetStr)
+            ? parseInt(offsetStr)
+            : null;
+        return [Math.min(parseInt(limitStr), MAX_LIMIT), offset];
+      }
+      return [DEFAULT_LIMIT, null];
+    })();
+
     try {
-      const formats = await fetchFormatList(keyword ?? null, url ?? null, qb);
+      const formats = await fetchFormatList(
+        keyword ?? null,
+        url ?? null,
+        limit,
+        offset,
+        qb
+      );
       if (formats.length === 0) {
         return c.json([], 404);
       }
