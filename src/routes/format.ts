@@ -4,6 +4,7 @@ import { D1QB } from "workers-qb";
 import { z } from "zod";
 
 import { Bindings } from "../bindings";
+import { fetchComments } from "../d1/comment";
 import {
   fetchFormatBlocks,
   fetchFormatList,
@@ -69,12 +70,14 @@ app.get(
       const uids = formats.map(({ user_id }) => user_id);
       const blocks = await fetchFormatBlocks(ids, qb);
       const thumbnails = await fetchFormatThumbnails(ids, qb);
+      const comments = await fetchComments(ids, qb);
       const users = await fetchUsers(uids, qb);
       const result = formats.map((format) =>
         groupFormat(
           format,
           blocks.filter(({ format_id }) => format_id === format.id),
           thumbnails.filter(({ format_id }) => format_id === format.id),
+          comments.filter(({ format_id }) => format_id === format.id),
           users.find(({ id }) => id === format.user_id)!
         )
       );
@@ -105,8 +108,15 @@ app.get(
       }
       const blocks = await fetchFormatBlocks([id], qb);
       const thumbnails = await fetchFormatThumbnails([id], qb);
+      const comments = await fetchComments([id], qb);
       const users = await fetchUsers([format[0].user_id], qb);
-      const result = groupFormat(format[0], blocks, thumbnails, users[0]);
+      const result = groupFormat(
+        format[0],
+        blocks,
+        thumbnails,
+        comments,
+        users[0]
+      );
       return c.json(result);
     } catch (e) {
       console.log(e);

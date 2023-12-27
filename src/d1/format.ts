@@ -1,5 +1,6 @@
 import { D1QB } from "workers-qb";
 
+import { CommentResult } from "./comment";
 import { User } from "./user";
 
 export interface Format {
@@ -7,7 +8,15 @@ export interface Format {
   title: string;
   description: string;
   tags: string[];
-  blocks: { url: string; block: string }[];
+  blocks: {
+    url: string;
+    block: string;
+  }[];
+  comments: {
+    star: number | null;
+    comment: string | null;
+  }[];
+  stars: number;
   thumbnails: string[];
   download: number;
   user: User;
@@ -54,7 +63,7 @@ export const fetchFormatsById = async (ids: string[], qb: D1QB) => {
       fields: "*",
       where: {
         conditions: `id in (${ids.map(() => "?").join(",")})`,
-        params: [...ids],
+        params: ids,
       },
     })
     .execute();
@@ -99,7 +108,7 @@ export const fetchFormatBlocks = async (formatIds: string[], qb: D1QB) => {
       fields: "*",
       where: {
         conditions: `format_id in (${formatIds.map(() => "?").join(",")})`,
-        params: [...formatIds],
+        params: formatIds,
       },
     })
     .execute();
@@ -116,7 +125,7 @@ export const fetchFormatThumbnails = async (formatIds: string[], qb: D1QB) => {
       fields: "*",
       where: {
         conditions: `format_id in (${formatIds.map(() => "?").join(",")})`,
-        params: [...formatIds],
+        params: formatIds,
       },
     })
     .execute();
@@ -192,18 +201,29 @@ export const groupFormat = (
   format: FormatResult,
   blocks: FormatBlock[],
   thumbnails: FormatThumbnail[],
+  comments: CommentResult[],
   user: User
-): Format => ({
-  id: format.id,
-  title: format.title,
-  description: format.description,
-  tags: JSON.parse(format.tags),
-  blocks: blocks
-    .sort((a, b) => a.order_no - b.order_no)
-    .map(({ url, block }) => ({ url, block })),
-  thumbnails: thumbnails.sort(({ order_no }) => order_no).map(({ src }) => src),
-  download: format.download,
-  user,
-  createdAt: format.created_at,
-  updatedAt: format.updated_at,
-});
+): Format => {
+  const stars =
+    comments.length > 0
+      ? comments.reduce((prev, { star }) => prev + star, 0) / comments.length
+      : 0;
+  return {
+    id: format.id,
+    title: format.title,
+    description: format.description,
+    tags: JSON.parse(format.tags),
+    comments: comments.map(({ star, comment }) => ({ star, comment })),
+    stars,
+    blocks: blocks
+      .sort((a, b) => a.order_no - b.order_no)
+      .map(({ url, block }) => ({ url, block })),
+    thumbnails: thumbnails
+      .sort(({ order_no }) => order_no)
+      .map(({ src }) => src),
+    download: format.download,
+    user,
+    createdAt: format.created_at,
+    updatedAt: format.updated_at,
+  };
+};

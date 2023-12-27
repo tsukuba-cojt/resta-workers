@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { Bindings } from "./bindings";
+import commentRouter from "./routes/comment";
 import formatRouter from "./routes/format";
 import thumbnailRouter from "./routes/thumbnail";
 import userRouter from "./routes/user";
@@ -19,6 +20,7 @@ app.get("/", (c) => {
   return c.text("Hello! This is Resta endpoint.");
 });
 
+app.route("/api/comments", commentRouter);
 app.route("/api/formats", formatRouter);
 app.route("/api/thumbnail", thumbnailRouter);
 app.route("/api/users", userRouter);
