@@ -1,5 +1,7 @@
 import { D1QB } from "workers-qb";
 
+import { User } from "./user";
+
 export interface Format {
   id: string;
   title: string;
@@ -8,7 +10,7 @@ export interface Format {
   blocks: { url: string; block: string }[];
   thumbnails: string[];
   download: number;
-  uid: string;
+  user: User;
   createdAt: string;
   updatedAt: string;
 }
@@ -51,8 +53,8 @@ export const fetchFormatsById = async (ids: string[], qb: D1QB) => {
       tableName: "format",
       fields: "*",
       where: {
-        conditions: `id in (?)`,
-        params: [ids.join(",")],
+        conditions: `id in (${ids.map(() => "?").join(",")})`,
+        params: [...ids],
       },
     })
     .execute();
@@ -72,6 +74,8 @@ export const fetchFormatList = async (
     conditions.push("title like ?");
     params.push(`%${keyword}%`);
   }
+
+  // TODO: url
 
   const result = await qb
     .fetchAll({
@@ -94,8 +98,8 @@ export const fetchFormatBlocks = async (formatIds: string[], qb: D1QB) => {
       tableName: "format_block",
       fields: "*",
       where: {
-        conditions: `format_id in (?)`,
-        params: [formatIds.join(",")],
+        conditions: `format_id in (${formatIds.map(() => "?").join(",")})`,
+        params: [...formatIds],
       },
     })
     .execute();
@@ -111,8 +115,8 @@ export const fetchFormatThumbnails = async (formatIds: string[], qb: D1QB) => {
       tableName: "format_thumbnail",
       fields: "*",
       where: {
-        conditions: `format_id in (?)`,
-        params: [formatIds.join(",")],
+        conditions: `format_id in (${formatIds.map(() => "?").join(",")})`,
+        params: [...formatIds],
       },
     })
     .execute();
@@ -187,7 +191,8 @@ export const insertFormatThumbnails = async (
 export const groupFormat = (
   format: FormatResult,
   blocks: FormatBlock[],
-  thumbnails: FormatThumbnail[]
+  thumbnails: FormatThumbnail[],
+  user: User
 ): Format => ({
   id: format.id,
   title: format.title,
@@ -198,7 +203,7 @@ export const groupFormat = (
     .map(({ url, block }) => ({ url, block })),
   thumbnails: thumbnails.sort(({ order_no }) => order_no).map(({ src }) => src),
   download: format.download,
-  uid: format.user_id,
+  user,
   createdAt: format.created_at,
   updatedAt: format.updated_at,
 });

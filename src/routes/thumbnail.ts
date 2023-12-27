@@ -8,9 +8,10 @@ import { z } from "zod";
 import { Bindings } from "../bindings";
 import { processBadRequest } from "../utils";
 
-interface FormatResult {
+interface ThumbnailResult {
   id: string;
   formatId: string;
+  extension: string;
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -33,18 +34,18 @@ app.post(
       if (!matched) {
         return c.text("Invalid image", 400);
       }
-      const extention = matched[1];
+      const extension = matched[1];
       const buffer = new Buffer(
         base64.replace(/data:image\/.+?;base64,/, ""),
         "base64"
       );
-      await c.env.R2.put(`thumbnails/${formatId}/${id}.${extention}`, buffer);
+      await c.env.R2.put(`thumbnails/${formatId}/${id}.${extension}`, buffer);
+      const result: ThumbnailResult = { id, formatId, extension };
+      return c.json(result, 201);
     } catch (e) {
       console.log(e);
       return c.text("Internal Server Error", 500);
     }
-    const result: FormatResult = { id, formatId };
-    return c.json(result, 201);
   }
 );
 

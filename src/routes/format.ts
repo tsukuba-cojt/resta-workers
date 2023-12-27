@@ -1,6 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { v4 as uuidV4 } from "uuid";
 import { D1QB } from "workers-qb";
 import { z } from "zod";
 
@@ -10,12 +9,12 @@ import {
   fetchFormatList,
   fetchFormatsById,
   fetchFormatThumbnails,
-  Format,
   groupFormat,
   insertFormat,
   insertFormatBlock,
   insertFormatThumbnails,
 } from "../d1/format";
+import { fetchUsers } from "../d1/user";
 import { authorize, getUidFromFirebaseUid } from "../firebase";
 import { processBadRequest } from "../utils";
 
@@ -64,16 +63,19 @@ app.get(
         qb
       );
       if (formats.length === 0) {
-        return c.json([], 404);
+        return c.json([]);
       }
       const ids = formats.map(({ id }) => id);
+      const uids = formats.map(({ user_id }) => user_id);
       const blocks = await fetchFormatBlocks(ids, qb);
       const thumbnails = await fetchFormatThumbnails(ids, qb);
-      const result: Format[] = formats.map((format) =>
+      const users = await fetchUsers(uids, qb);
+      const result = formats.map((format) =>
         groupFormat(
           format,
           blocks.filter(({ format_id }) => format_id === format.id),
-          thumbnails.filter(({ format_id }) => format_id === format.id)
+          thumbnails.filter(({ format_id }) => format_id === format.id),
+          users.find(({ id }) => id === format.user_id)!
         )
       );
       return c.json(result);
@@ -103,7 +105,8 @@ app.get(
       }
       const blocks = await fetchFormatBlocks([id], qb);
       const thumbnails = await fetchFormatThumbnails([id], qb);
-      const result = groupFormat(format[0], blocks, thumbnails);
+      const users = await fetchUsers([format[0].user_id], qb);
+      const result = groupFormat(format[0], blocks, thumbnails, users[0]);
       return c.json(result);
     } catch (e) {
       console.log(e);
@@ -117,6 +120,7 @@ const MAX_TITLE_COUNT = 32;
 const MAX_PHOTO_COUNT = 8;
 
 const postFormatsSchema = z.object({
+  formatId: z.string().uuid(),
   title: z.string().max(MAX_TITLE_COUNT),
   description: z.string(),
   tags: z.array(z.string()),
@@ -134,7 +138,7 @@ app.post(
   zValidator("json", postFormatsSchema, processBadRequest),
   authorize,
   async (c) => {
-    const { title, thumbnails, description, tags, blocks } =
+    const { formatId, title, thumbnails, description, tags, blocks } =
       c.req.valid("json");
 
     const firebaseUid = (c as any).firebaseUid;
@@ -144,7 +148,6 @@ app.post(
     }
 
     const qb = new D1QB(c.env.DB);
-    const formatId = uuidV4();
 
     try {
       await insertFormat(formatId, title, description, tags, uid, qb);

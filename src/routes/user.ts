@@ -5,6 +5,7 @@ import { D1QB } from "workers-qb";
 import { z } from "zod";
 
 import { Bindings } from "../bindings";
+import { fetchUsersByFirebaseUid } from "../d1/user";
 import { authorize } from "../firebase";
 import { processBadRequest } from "../utils";
 
@@ -23,33 +24,14 @@ app.get("/me", authorize, async (c) => {
   const firebaseUid = (c as any).firebaseUid;
   const qb = new D1QB(c.env.DB);
 
-  interface FetchResult {
-    id: string;
-    firebase_uid: string;
-    name: string;
-  }
-  const fetched: FetchResult[] = (
-    await qb
-      .fetchAll({
-        tableName: "user",
-        fields: "id, firebase_uid, name",
-        where: {
-          conditions: `firebase_uid = '${firebaseUid}'`,
-        },
-      })
-      .execute()
-  ).results;
-
-  // ユーザが存在しない場合
+  const fetched = await fetchUsersByFirebaseUid(firebaseUid, qb);
   if (fetched.length === 0) {
     return c.json({}, 404);
   }
-
-  // ユーザが存在する場合
   const result: UserResult = {
     user: {
       uid: fetched[0].id,
-      firebaseUid: fetched[0].firebase_uid,
+      firebaseUid: fetched[0].firebaseUid,
       name: fetched[0].name,
     },
   };
