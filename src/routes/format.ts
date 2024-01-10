@@ -25,6 +25,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 const getFormatListSchema = z.object({
   keyword: z.string().optional(),
   url: z.string().optional(),
+  userId: z.string().optional(),
   limit: z.string().optional(),
   offset: z.string().optional(),
 });
@@ -39,6 +40,7 @@ app.get(
     const {
       keyword,
       url,
+      userId,
       limit: limitStr,
       offset: offsetStr,
     } = c.req.valid("query");
@@ -59,6 +61,7 @@ app.get(
       const formats = await fetchFormatList(
         keyword ?? null,
         url ?? null,
+        userId ?? null,
         limit,
         offset,
         qb

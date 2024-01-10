@@ -73,6 +73,7 @@ export const fetchFormatsById = async (ids: string[], qb: D1QB) => {
 export const fetchFormatList = async (
   keyword: string | null,
   url: string | null,
+  userId: string | null,
   limit: number,
   offset: number | null,
   qb: D1QB
@@ -82,6 +83,10 @@ export const fetchFormatList = async (
   if (keyword) {
     conditions.push("title like ?");
     params.push(`%${keyword}%`);
+  }
+  if (userId) {
+    conditions.push("user_id = ?");
+    params.push(userId);
   }
   if (url) {
     const blocks = (
