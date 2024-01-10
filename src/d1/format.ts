@@ -83,8 +83,27 @@ export const fetchFormatList = async (
     conditions.push("title like ?");
     params.push(`%${keyword}%`);
   }
+  if (url) {
+    const blocks = (
+      await qb
+        .fetchAll({
+          tableName: "format_block",
+          fields: "*",
+          where: {
+            conditions: `url like ?`,
+            params: [`%${url}%`],
+          },
+        })
+        .execute()
+    ).results as FormatBlock[];
 
-  // TODO: url
+    const ids = blocks.map(({ format_id }) => format_id);
+    if (ids.length === 0) {
+      return [];
+    }
+    conditions.push(`id in (${ids.map(() => "?").join(",")})`);
+    params.push(...ids);
+  }
 
   const result = await qb
     .fetchAll({
