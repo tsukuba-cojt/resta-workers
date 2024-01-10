@@ -63,7 +63,7 @@ app.post(
       .insert({
         tableName: "user",
         data: {
-          uid,
+          id: uid,
           name,
           firebase_uid: firebaseUid,
         },
