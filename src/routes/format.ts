@@ -26,6 +26,7 @@ const getFormatListSchema = z.object({
   keyword: z.string().optional(),
   url: z.string().optional(),
   userId: z.string().optional(),
+  tag: z.string().optional(),
   limit: z.string().optional(),
   offset: z.string().optional(),
 });
@@ -41,6 +42,7 @@ app.get(
       keyword,
       url,
       userId,
+      tag,
       limit: limitStr,
       offset: offsetStr,
     } = c.req.valid("query");
@@ -62,6 +64,7 @@ app.get(
         keyword ?? null,
         url ?? null,
         userId ?? null,
+        tag ?? null,
         limit,
         offset,
         qb

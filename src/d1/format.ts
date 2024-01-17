@@ -74,6 +74,7 @@ export const fetchFormatList = async (
   keyword: string | null,
   url: string | null,
   userId: string | null,
+  tag: string | null,
   limit: number,
   offset: number | null,
   qb: D1QB
@@ -87,6 +88,10 @@ export const fetchFormatList = async (
   if (userId) {
     conditions.push("user_id = ?");
     params.push(userId);
+  }
+  if (tag) {
+    conditions.push("tags like ?");
+    params.push(`%${tag}%`);
   }
   if (url) {
     const blocks = (
@@ -171,7 +176,7 @@ export const insertFormat = async (
         id: formatId,
         title,
         description,
-        tags: JSON.stringify(tags),
+        tags: tags.join(","),
         user_id: uid,
       },
     })
