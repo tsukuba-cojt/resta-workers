@@ -18,6 +18,7 @@ import {
 import { fetchUsers } from "../d1/user";
 import { authorize, getUidFromFirebaseUid } from "../firebase";
 import { processBadRequest } from "../utils";
+import { validateFormatBlock } from "../validator/validator";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -156,6 +157,10 @@ app.post(
   async (c) => {
     const { formatId, title, thumbnails, description, tags, blocks } =
       c.req.valid("json");
+
+    for (const block of blocks) {
+      validateFormatBlock(block.block);
+    }
 
     const firebaseUid = (c as any).firebaseUid;
     const uid = await getUidFromFirebaseUid(firebaseUid, c.env.DB);
